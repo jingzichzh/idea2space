@@ -1,6 +1,8 @@
 import { ArrowLeft, Mic, Pause, Play, RotateCcw, Square } from 'lucide-react'
+import { useState } from 'react'
 import { useDemoTimeline } from '../hooks/useDemoTimeline'
 import { useVoiceSession } from '../hooks/useVoiceSession'
+import { generateArchitecture, type GeneratedArchitecture } from '../lib/api'
 import { studioMeta } from '../lib/mockData'
 import { ArchitectureGraph } from './ArchitectureGraph'
 import { LiveTranscript } from './LiveTranscript'
@@ -14,23 +16,56 @@ const STUDIO_GRAIN_CLASS = 'grain studio-grain'
 
 export function StudioPage({ autoStart, onBack }: StudioPageProps) {
   const demo = useDemoTimeline(autoStart)
+  const [generatedArchitecture, setGeneratedArchitecture] = useState<GeneratedArchitecture | null>(null)
+  const [isGeneratingArchitecture, setIsGeneratingArchitecture] = useState(false)
   const voice = useVoiceSession({
     onFallback: demo.replay,
     onRecordingStarted: demo.start,
   })
   const transcriptWords = voice.hasTranscript ? voice.transcriptWords : demo.visibleTranscriptWords
-  const statusLabel = getVoiceStatusLabel(voice.state, voice.generationStatus) ?? demo.statusLabel
-  const statusState = voice.isRecording || voice.isStarting ? 'recording' : demo.demoState
+  const statusLabel = isGeneratingArchitecture
+    ? 'GENERATING HF ARCHITECTURE'
+    : getVoiceStatusLabel(voice.state, voice.generationStatus) ?? demo.statusLabel
+  const statusState = isGeneratingArchitecture || voice.generationStatus === 'generating_architecture'
+    ? 'generating'
+    : voice.isRecording || voice.isStarting ? 'recording' : demo.demoState
   const wordCount = transcriptWords.length
+  const architectureSourceLabel = generatedArchitecture ? `${generatedArchitecture.nodes.length} SERVICES · GENERATED` : '8 SERVICES · MOCK ONLY'
 
   const replay = () => {
+    setGeneratedArchitecture(null)
     voice.reset()
     demo.replay()
   }
 
   const reset = () => {
+    setGeneratedArchitecture(null)
+    setIsGeneratingArchitecture(false)
     voice.reset()
     demo.reset()
+  }
+
+  const toggleRecording = async () => {
+    if (!voice.isRecording) {
+      setGeneratedArchitecture(null)
+      await voice.start()
+      return
+    }
+
+    const transcript = voice.transcriptText
+    voice.stop()
+
+    if (!transcript.trim()) return
+
+    setIsGeneratingArchitecture(true)
+    try {
+      const response = await generateArchitecture(transcript)
+      setGeneratedArchitecture(response.architecture)
+    } catch {
+      setGeneratedArchitecture(null)
+    } finally {
+      setIsGeneratingArchitecture(false)
+    }
   }
 
   return (
@@ -65,9 +100,9 @@ export function StudioPage({ autoStart, onBack }: StudioPageProps) {
           <b>{statusState}</b>
         </div>
         <div className="demo-controls">
-          <button type="button" onClick={voice.isRecording ? voice.stop : voice.start} disabled={voice.isStarting}>
+          <button type="button" onClick={toggleRecording} disabled={voice.isStarting || isGeneratingArchitecture}>
             {voice.isRecording ? <Square size={13} /> : <Mic size={14} />}
-            {voice.isRecording ? 'Stop recording' : voice.isStarting ? 'Starting mic' : 'Start recording'}
+            {voice.isRecording ? 'Stop recording' : voice.isStarting ? 'Starting mic' : isGeneratingArchitecture ? 'Generating' : 'Start recording'}
           </button>
           <button type="button" onClick={replay}>
             <RotateCcw size={14} />
@@ -97,11 +132,14 @@ export function StudioPage({ autoStart, onBack }: StudioPageProps) {
               <h2>voice → product → Space</h2>
             </div>
             <div>
-              <span>8 SERVICES · MOCK ONLY</span>
+              <span>{architectureSourceLabel}</span>
               <strong>SHEET 01 / 03</strong>
             </div>
           </header>
-          <ArchitectureGraph visibleNodeIds={demo.visibleArchitectureNodeIds} />
+          <ArchitectureGraph
+            generatedArchitecture={generatedArchitecture}
+            visibleNodeIds={demo.visibleArchitectureNodeIds}
+          />
         </section>
       </div>
     </section>

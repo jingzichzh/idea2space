@@ -11,3 +11,7 @@ class TranscriptMessage(BaseModel):
 class GenerationStatusMessage(BaseModel):
     type: str = "generation_status"
     status: str
+
+
+class GenerateArchitectureRequest(BaseModel):
+    transcript: str

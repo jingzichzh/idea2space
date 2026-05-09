@@ -2,7 +2,7 @@
 
 ## Local Development
 
-Phase 3 supports real Hugging Face ASR when `HF_TOKEN` is set. If `HF_TOKEN` is missing or ASR fails, the backend keeps returning mock transcript segments.
+Phase 3 supports real Hugging Face ASR when `HF_TOKEN` is set. Phase 4 can use a Hugging Face-hosted LLM to turn the final transcript into an architecture JSON when both `HF_TOKEN` and `LLM_MODEL` are set. If ASR or architecture generation fails, the app keeps using mock fallback data.
 
 Create a local `.env` file from `.env.example`:
 
@@ -15,9 +15,12 @@ Set your Hugging Face token in `.env`:
 ```text
 HF_TOKEN=your_hugging_face_token
 ASR_MODEL=openai/whisper-large-v3
+LLM_MODEL=Qwen/Qwen3-235B-A22B-Instruct-2507
 ```
 
 Do not commit `.env`.
+
+You can change `LLM_MODEL` to another Hugging Face chat model without code changes. Leave `LLM_MODEL` empty to test the architecture mock fallback path.
 
 Terminal 1:
 
@@ -43,4 +46,13 @@ Expected response:
 
 ```json
 {"status":"ok"}
+```
+
+Architecture generation fallback check:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri http://127.0.0.1:7860/api/generate-architecture `
+  -ContentType "application/json" `
+  -Body '{"transcript":"Build a voice app that turns founder ideas into Hugging Face Spaces architectures."}'
 ```

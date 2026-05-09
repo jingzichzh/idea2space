@@ -75,7 +75,7 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
         const data = parseSocketMessage(event.data)
         if (!data) return
 
-        if (data.type === 'transcript') {
+        if (data.type === 'transcript' && data.text.trim()) {
           setSegments((current) => [...current, data.text])
         }
 
@@ -109,12 +109,14 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
     () => segments.join(' ').split(/\s+/).filter(Boolean),
     [segments],
   )
+  const transcriptText = useMemo(() => transcriptWords.join(' '), [transcriptWords])
 
   return {
     generationStatus,
     isRecording: state === 'recording',
     isStarting: state === 'connecting',
     state,
+    transcriptText,
     transcriptWords,
     hasTranscript: transcriptWords.length > 0,
     reset,
