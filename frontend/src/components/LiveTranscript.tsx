@@ -2,12 +2,13 @@ import { transcriptTags } from '../lib/mockData'
 import { Waveform } from './Waveform'
 
 type LiveTranscriptProps = {
+  active?: boolean
   statusLabel: string
   visibleWords: string[]
   wordCount: number
 }
 
-export function LiveTranscript({ statusLabel, visibleWords, wordCount }: LiveTranscriptProps) {
+export function LiveTranscript({ active = false, statusLabel, visibleWords, wordCount }: LiveTranscriptProps) {
   return (
     <aside className="transcript-panel">
       <header>
@@ -26,9 +27,9 @@ export function LiveTranscript({ statusLabel, visibleWords, wordCount }: LiveTra
       <div className="waveform-wrap">
         <div>
           <span>WAVEFORM</span>
-          <span>{wordCount > 0 ? '-12 dB' : 'armed'}</span>
+          <span>{active || wordCount > 0 ? '-12 dB' : 'armed'}</span>
         </div>
-        <Waveform active={wordCount > 0} />
+        <Waveform active={active || wordCount > 0} />
       </div>
 
       <footer>

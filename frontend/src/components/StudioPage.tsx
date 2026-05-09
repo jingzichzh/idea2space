@@ -1,5 +1,6 @@
-import { ArrowLeft, Pause, Play, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Mic, Pause, Play, RotateCcw, Square } from 'lucide-react'
 import { useDemoTimeline } from '../hooks/useDemoTimeline'
+import { useVoiceSession } from '../hooks/useVoiceSession'
 import { studioMeta } from '../lib/mockData'
 import { ArchitectureGraph } from './ArchitectureGraph'
 import { LiveTranscript } from './LiveTranscript'
@@ -13,6 +14,24 @@ const STUDIO_GRAIN_CLASS = 'grain studio-grain'
 
 export function StudioPage({ autoStart, onBack }: StudioPageProps) {
   const demo = useDemoTimeline(autoStart)
+  const voice = useVoiceSession({
+    onFallback: demo.replay,
+    onRecordingStarted: demo.start,
+  })
+  const transcriptWords = voice.hasTranscript ? voice.transcriptWords : demo.visibleTranscriptWords
+  const statusLabel = getVoiceStatusLabel(voice.state, voice.generationStatus) ?? demo.statusLabel
+  const statusState = voice.isRecording || voice.isStarting ? 'recording' : demo.demoState
+  const wordCount = transcriptWords.length
+
+  const replay = () => {
+    voice.reset()
+    demo.replay()
+  }
+
+  const reset = () => {
+    voice.reset()
+    demo.reset()
+  }
 
   return (
     <section className="studio">
@@ -41,12 +60,16 @@ export function StudioPage({ autoStart, onBack }: StudioPageProps) {
 
       <div className="demo-status-bar">
         <div>
-          <i className={`status-dot status-${demo.demoState}`} />
-          <span>{demo.statusLabel}</span>
-          <b>{demo.demoState}</b>
+          <i className={`status-dot status-${statusState}`} />
+          <span>{statusLabel}</span>
+          <b>{statusState}</b>
         </div>
         <div className="demo-controls">
-          <button type="button" onClick={demo.replay}>
+          <button type="button" onClick={voice.isRecording ? voice.stop : voice.start} disabled={voice.isStarting}>
+            {voice.isRecording ? <Square size={13} /> : <Mic size={14} />}
+            {voice.isRecording ? 'Stop recording' : voice.isStarting ? 'Starting mic' : 'Start recording'}
+          </button>
+          <button type="button" onClick={replay}>
             <RotateCcw size={14} />
             Replay demo
           </button>
@@ -54,7 +77,7 @@ export function StudioPage({ autoStart, onBack }: StudioPageProps) {
             {demo.isPaused ? <Play size={14} /> : <Pause size={14} />}
             {demo.isPaused ? 'Resume' : 'Pause'}
           </button>
-          <button type="button" onClick={demo.reset}>
+          <button type="button" onClick={reset}>
             Reset studio
           </button>
         </div>
@@ -62,9 +85,10 @@ export function StudioPage({ autoStart, onBack }: StudioPageProps) {
 
       <div className="studio-canvas">
         <LiveTranscript
-          statusLabel={demo.statusLabel}
-          visibleWords={demo.visibleTranscriptWords}
-          wordCount={demo.wordCount}
+          active={voice.isRecording}
+          statusLabel={statusLabel}
+          visibleWords={transcriptWords}
+          wordCount={wordCount}
         />
         <section className="architecture-sheet">
           <header>
@@ -82,4 +106,11 @@ export function StudioPage({ autoStart, onBack }: StudioPageProps) {
       </div>
     </section>
   )
+}
+
+function getVoiceStatusLabel(state: ReturnType<typeof useVoiceSession>['state'], generationStatus: string | null) {
+  if (state === 'connecting') return 'REQUESTING MIC / CONNECTING'
+  if (generationStatus === 'generating_architecture') return 'GENERATING HF ARCHITECTURE'
+  if (state === 'recording') return 'LIVE MIC / MOCK TRANSCRIPT'
+  return null
 }
