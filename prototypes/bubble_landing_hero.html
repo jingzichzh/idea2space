@@ -1,0 +1,376 @@
+<div id="bb-land" style="position: relative; background: #E8C5AF; font-family: 'Inter', system-ui, sans-serif; border-radius: var(--border-radius-lg); overflow: hidden; min-height: 720px; letter-spacing: -0.01em; cursor: crosshair;">
+
+  <!-- Layer 0: animated grain -->
+  <canvas id="land-grain" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:multiply; opacity:0.07; z-index:5;"></canvas>
+
+  <!-- Layer 1: 3D Three.js canvas -->
+  <canvas id="land-three" style="position:absolute; inset:0; width:100%; height:100%; z-index:1;"></canvas>
+
+  <!-- Layer 2: grid overlay -->
+  <div style="position:absolute; inset:0; pointer-events:none; z-index:2;
+    background-image:
+      linear-gradient(rgba(60,30,20,0.06) 0.5px, transparent 0.5px),
+      linear-gradient(90deg, rgba(60,30,20,0.06) 0.5px, transparent 0.5px);
+    background-size: 32px 32px;"></div>
+
+  <!-- Layer 3: corner registration marks -->
+  <svg style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3;" preserveAspectRatio="none">
+    <g stroke="#1A0E08" stroke-width="0.5" opacity="0.4" fill="none">
+      <line x1="20" y1="32" x2="44" y2="32"/><line x1="32" y1="20" x2="32" y2="44"/>
+      <line x1="calc(100% - 44px)" y1="32" x2="calc(100% - 20px)" y2="32"/>
+    </g>
+  </svg>
+
+  <!-- Layer 4: top nav -->
+  <div style="position:relative; z-index:10; display:flex; justify-content:space-between; align-items:center; padding: 28px 40px; border-bottom: 0.5px solid rgba(26,14,8,0.15);">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div id="land-logo-mini" style="width:28px; height:28px; background:#1A0E08; border-radius:5px; position:relative; overflow:hidden;">
+        <canvas id="land-logo-cv" style="width:100%; height:100%; display:block;"></canvas>
+      </div>
+      <div style="font-size:15px; color:#1A0E08; font-weight:700; letter-spacing:-0.025em;">bubble</div>
+    </div>
+    <div style="display:flex; gap:32px; font-family: ui-monospace, monospace; font-size:11px; color:#1A0E08; letter-spacing:0.1em;">
+      <span style="opacity:0.6; cursor:pointer;">WORK</span>
+      <span style="opacity:0.6; cursor:pointer;">STUDIO</span>
+      <span style="opacity:0.6; cursor:pointer;">MANIFESTO</span>
+      <span style="opacity:0.6; cursor:pointer;">CHANGELOG</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px; font-family: ui-monospace, monospace; font-size:10px; letter-spacing:0.12em;">
+      <div id="land-clock" style="color:#5A2F1F; opacity:0.65;">PARIS · 14:32</div>
+      <button style="background:#1A0E08; color:#E8C5AF; border:none; padding:8px 16px; border-radius:4px; font-family:inherit; font-size:11px; letter-spacing:0.08em; font-weight:600; cursor:pointer;">ENTER STUDIO →</button>
+    </div>
+  </div>
+
+  <!-- Layer 5: top metadata strip (drafting bar) -->
+  <div style="position:relative; z-index:10; display:flex; justify-content:space-between; padding: 14px 40px; border-bottom: 0.5px dashed rgba(26,14,8,0.18); font-family: ui-monospace, monospace; font-size:10px; color:#5A2F1F; letter-spacing:0.12em;">
+    <div style="display:flex; gap:24px;">
+      <span><span style="opacity:0.5;">SHEET</span> 00 / HERO</span>
+      <span><span style="opacity:0.5;">REV</span> 2026.05.A</span>
+      <span><span style="opacity:0.5;">SCALE</span> 1:1</span>
+    </div>
+    <div style="display:flex; gap:24px;">
+      <span style="display:flex; align-items:center; gap:6px;">
+        <span class="land-rec" style="width:6px; height:6px; background:#E85D24; border-radius:50%;"></span>
+        STUDIO LIVE
+      </span>
+      <span><span style="opacity:0.5;">FPS</span> <span id="land-fps">60</span></span>
+    </div>
+  </div>
+
+  <!-- Layer 6: hero content -->
+  <div style="position:relative; z-index:10; padding: 80px 40px 60px; min-height: 540px;">
+    
+    <!-- Left content -->
+    <div style="max-width: 580px;">
+      <!-- eyebrow with line -->
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom: 28px;">
+        <div style="width:48px; height:1px; background:#1A0E08;"></div>
+        <span style="font-family: ui-monospace, monospace; font-size:11px; color:#1A0E08; letter-spacing:0.18em; font-weight:500;">A QUIET PLACE FOR HALF-FORMED IDEAS</span>
+      </div>
+
+      <!-- big headline with reveal -->
+      <h1 id="land-h1" style="font-size: 88px; line-height: 0.92; color:#1A0E08; font-weight: 700; letter-spacing:-0.045em; margin: 0 0 36px; max-width: 560px;">
+        <span class="land-word">tell</span>
+        <span class="land-word">me</span>
+        <span class="land-word" style="font-style: italic; font-family: 'Times New Roman', serif; font-weight:500;">what</span><br>
+        <span class="land-word">you</span>
+        <span class="land-word">build.</span>
+      </h1>
+
+      <!-- subline -->
+      <p id="land-sub" style="font-size:17px; line-height:1.55; color:#3C2418; max-width:440px; margin:0 0 44px; opacity:0; transform: translateY(12px); transition: all 0.8s cubic-bezier(.2,.7,.3,1) 0.6s;">
+        Press the mic and speak like you'd speak to a co-founder. We sketch the architecture, live, as the words come out.
+      </p>
+
+      <!-- CTA cluster -->
+      <div id="land-cta" style="display:flex; align-items:center; gap:20px; opacity:0; transform: translateY(12px); transition: all 0.8s cubic-bezier(.2,.7,.3,1) 0.9s;">
+        <button id="land-mic-btn" style="display:flex; align-items:center; gap:14px; background:#1A0E08; color:#E8C5AF; border:none; padding:18px 28px 18px 22px; border-radius:8px; font-family:inherit; font-size:14px; letter-spacing:-0.01em; font-weight:600; cursor:pointer; transition: transform 0.3s; position:relative; overflow:hidden;">
+          <span style="display:inline-flex; width:24px; height:24px; background:#E85D24; border-radius:50%; align-items:center; justify-content:center; position:relative;">
+            <span style="width:8px; height:12px; background:#1A0E08; border-radius:3px;"></span>
+            <span class="land-mic-ring" style="position:absolute; inset:-6px; border:1.5px solid #E85D24; border-radius:50%; opacity:0;"></span>
+          </span>
+          <span>Press to talk</span>
+          <span style="font-family: ui-monospace, monospace; font-size:10px; opacity:0.5; padding:3px 6px; border:0.5px solid rgba(245,229,211,0.3); border-radius:3px; letter-spacing:0.08em;">SPACE</span>
+        </button>
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          <span style="font-family: ui-monospace, monospace; font-size:10px; color:#5A2F1F; letter-spacing:0.12em; opacity:0.6;">OR TYPE</span>
+          <span style="font-size:13px; color:#1A0E08; font-weight:500;">just describe it →</span>
+        </div>
+      </div>
+
+      <!-- specimen chips -->
+      <div id="land-chips" style="margin-top:64px; opacity:0; transform: translateY(12px); transition: all 0.8s cubic-bezier(.2,.7,.3,1) 1.2s;">
+        <div style="font-family: ui-monospace, monospace; font-size:10px; color:#5A2F1F; letter-spacing:0.18em; margin-bottom:12px; opacity:0.6; font-weight:500;">SPECIMENS · BUILT IN STUDIO</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <div class="land-chip" style="font-family: ui-monospace, monospace; font-size:11px; padding:6px 12px; background:rgba(26,14,8,0.06); color:#1A0E08; border:0.5px solid rgba(26,14,8,0.2); border-radius:4px; cursor:pointer; transition:all 0.2s;">voice-cloned podcast</div>
+          <div class="land-chip" style="font-family: ui-monospace, monospace; font-size:11px; padding:6px 12px; background:rgba(26,14,8,0.06); color:#1A0E08; border:0.5px solid rgba(26,14,8,0.2); border-radius:4px; cursor:pointer; transition:all 0.2s;">multilingual support</div>
+          <div class="land-chip" style="font-family: ui-monospace, monospace; font-size:11px; padding:6px 12px; background:rgba(26,14,8,0.06); color:#1A0E08; border:0.5px solid rgba(26,14,8,0.2); border-radius:4px; cursor:pointer; transition:all 0.2s;">AI code reviewer</div>
+          <div class="land-chip" style="font-family: ui-monospace, monospace; font-size:11px; padding:6px 12px; background:rgba(26,14,8,0.06); color:#1A0E08; border:0.5px solid rgba(26,14,8,0.2); border-radius:4px; cursor:pointer; transition:all 0.2s;">+ 47 more</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right side: floating annotation about the 3D object -->
+    <div id="land-annot" style="position:absolute; right:60px; top:140px; opacity:0; transition: opacity 1s ease 1.5s;">
+      <svg width="140" height="80" style="overflow:visible;">
+        <line x1="0" y1="40" x2="100" y2="40" stroke="#1A0E08" stroke-width="0.5" stroke-dasharray="2 2"/>
+        <circle cx="0" cy="40" r="2" fill="#1A0E08"/>
+        <text x="105" y="36" font-family="ui-monospace, monospace" font-size="10" fill="#1A0E08" letter-spacing="0.05em" font-weight="600">FIG. A</text>
+        <text x="105" y="48" font-family="ui-monospace, monospace" font-size="9" fill="#5A2F1F" letter-spacing="0.04em">voice → form</text>
+        <text x="105" y="60" font-family="ui-monospace, monospace" font-size="9" fill="#5A2F1F" letter-spacing="0.04em" opacity="0.6">(move cursor)</text>
+      </svg>
+    </div>
+
+    <!-- bottom-right scroll indicator -->
+    <div id="land-scroll" style="position:absolute; bottom:32px; right:40px; display:flex; flex-direction:column; align-items:flex-end; gap:8px; font-family: ui-monospace, monospace; font-size:10px; color:#1A0E08; letter-spacing:0.18em; opacity:0; transition: opacity 1s ease 1.8s;">
+      <span style="opacity:0.6;">SCROLL TO ENTER</span>
+      <div style="width:1px; height:48px; background:linear-gradient(180deg, #1A0E08 0%, transparent 100%); position:relative;">
+        <div class="land-scroll-dot" style="position:absolute; top:0; left:-2px; width:5px; height:5px; background:#E85D24; border-radius:50%;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  @keyframes land-rec-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(1.3); } }
+  .land-rec { animation: land-rec-pulse 1.5s ease-in-out infinite; display:inline-block; box-shadow: 0 0 8px rgba(232,93,36,0.5); }
+  
+  .land-word { display: inline-block; opacity: 0; transform: translateY(40px) rotateX(-20deg); transform-origin: 0 100%; transition: all 0.9s cubic-bezier(.2,.7,.2,1); }
+  .land-word.in { opacity: 1; transform: translateY(0) rotateX(0); }
+  
+  @keyframes land-mic-ring { 0% { opacity:0.7; transform:scale(1); } 100% { opacity:0; transform:scale(2.4); } }
+  #land-mic-btn:hover .land-mic-ring { animation: land-mic-ring 1.4s ease-out infinite; }
+  #land-mic-btn:hover { transform: translateY(-2px); }
+  
+  .land-chip:hover { background: #1A0E08; color: #E8C5AF; border-color: #1A0E08; transform: translateY(-1px); }
+  
+  @keyframes land-scroll-dot { 0% { top:0; opacity:1; } 80% { top:42px; opacity:0; } 100% { top:42px; opacity:0; } }
+  .land-scroll-dot { animation: land-scroll-dot 2s ease-in-out infinite; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function() {
+  // ============================================================
+  // 1. ANIMATED GRAIN
+  // ============================================================
+  const grainCv = document.getElementById('land-grain');
+  const gctx = grainCv.getContext('2d');
+  function paintGrain() {
+    const w = grainCv.width = grainCv.offsetWidth;
+    const h = grainCv.height = grainCv.offsetHeight;
+    const img = gctx.createImageData(w, h);
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const v = Math.random() * 255 | 0;
+      d[i]=v; d[i+1]=v; d[i+2]=v; d[i+3]=255;
+    }
+    gctx.putImageData(img, 0, 0);
+  }
+  paintGrain();
+  setInterval(paintGrain, 130);
+
+  // ============================================================
+  // 2. THREE.JS HERO OBJECT — voice-driven sculpture
+  // ============================================================
+  const cv = document.getElementById('land-three');
+  const W = () => cv.offsetWidth;
+  const H = () => cv.offsetHeight;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, W()/H(), 0.1, 100);
+  camera.position.set(0, 0, 4.2);
+
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(W(), H(), false);
+
+  // The sculpture: a wireframe icosahedron + a points cloud + an inner solid
+  const group = new THREE.Group();
+  // Position it on the right third of the canvas
+  group.position.x = 1.5;
+  scene.add(group);
+
+  // Inner solid (matte dark)
+  const innerGeo = new THREE.IcosahedronGeometry(0.85, 1);
+  const innerMat = new THREE.MeshBasicMaterial({ color: 0x1A0E08, transparent:true, opacity:0.92 });
+  const inner = new THREE.Mesh(innerGeo, innerMat);
+  group.add(inner);
+
+  // Wireframe outer
+  const wireGeo = new THREE.IcosahedronGeometry(1.05, 2);
+  const wireMat = new THREE.LineBasicMaterial({ color: 0x1A0E08, transparent:true, opacity:0.55 });
+  const wireFrame = new THREE.LineSegments(new THREE.WireframeGeometry(wireGeo), wireMat);
+  group.add(wireFrame);
+
+  // Outer breathing wireframe (larger, fainter)
+  const wire2Geo = new THREE.IcosahedronGeometry(1.4, 1);
+  const wire2 = new THREE.LineSegments(new THREE.WireframeGeometry(wire2Geo), 
+    new THREE.LineBasicMaterial({ color: 0xE85D24, transparent:true, opacity:0.35 }));
+  group.add(wire2);
+
+  // Points cloud — orbital particles around it
+  const pCount = 220;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  const pData = []; // {radius, theta, phi, speed}
+  for (let i = 0; i < pCount; i++) {
+    const r = 1.6 + Math.random() * 0.8;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    pData.push({ r, theta, phi, speed: 0.002 + Math.random() * 0.003 });
+    pPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    pPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    pPos[i*3+2] = r * Math.cos(phi);
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({ color: 0x1A0E08, size: 0.025, transparent:true, opacity:0.7, sizeAttenuation: true });
+  const points = new THREE.Points(pGeo, pMat);
+  group.add(points);
+
+  // Mouse tracking
+  const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+  const land = document.getElementById('bb-land');
+  land.addEventListener('mousemove', (e) => {
+    const r = land.getBoundingClientRect();
+    mouse.tx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+    mouse.ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
+  });
+  land.addEventListener('mouseleave', () => { mouse.tx = 0; mouse.ty = 0; });
+
+  // Vertex displacement on inner sphere — simulates voice waveform
+  const innerOriginal = innerGeo.attributes.position.array.slice();
+  let voiceAmp = 0; // grows on hover
+  let voiceTarget = 0;
+  
+  const micBtn = document.getElementById('land-mic-btn');
+  micBtn.addEventListener('mouseenter', () => voiceTarget = 1);
+  micBtn.addEventListener('mouseleave', () => voiceTarget = 0);
+
+  // FPS counter
+  const fpsEl = document.getElementById('land-fps');
+  let fpsFrames = 0, fpsLast = performance.now();
+
+  // Animation loop
+  let t = 0;
+  function tick() {
+    t += 0.01;
+    
+    // Smooth mouse
+    mouse.x += (mouse.tx - mouse.x) * 0.06;
+    mouse.y += (mouse.ty - mouse.y) * 0.06;
+    voiceAmp += (voiceTarget - voiceAmp) * 0.08;
+    
+    // Group rotation responds to mouse + auto rotation
+    group.rotation.y = t * 0.15 + mouse.x * 0.6;
+    group.rotation.x = mouse.y * 0.4;
+    
+    // Wireframe counter-rotation
+    wire2.rotation.y = -t * 0.25;
+    wire2.rotation.x = t * 0.18;
+    // Pulsing breath
+    const breath = 1 + Math.sin(t * 1.5) * 0.04 + voiceAmp * 0.15;
+    wire2.scale.setScalar(breath);
+    
+    // Inner mesh — vertex displacement (the "voice" effect)
+    const pos = innerGeo.attributes.position.array;
+    for (let i = 0; i < pos.length; i += 3) {
+      const ox = innerOriginal[i], oy = innerOriginal[i+1], oz = innerOriginal[i+2];
+      const noise = Math.sin(ox * 4 + t * 2) * Math.cos(oy * 4 + t * 1.7) * Math.sin(oz * 4 + t * 1.3);
+      const disp = 1 + noise * (0.04 + voiceAmp * 0.12);
+      pos[i]   = ox * disp;
+      pos[i+1] = oy * disp;
+      pos[i+2] = oz * disp;
+    }
+    innerGeo.attributes.position.needsUpdate = true;
+    innerGeo.computeVertexNormals();
+    
+    // Points orbit
+    const pp = pGeo.attributes.position.array;
+    for (let i = 0; i < pCount; i++) {
+      const d = pData[i];
+      d.theta += d.speed;
+      const r = d.r * (1 + voiceAmp * 0.2);
+      pp[i*3]   = r * Math.sin(d.phi) * Math.cos(d.theta);
+      pp[i*3+1] = r * Math.sin(d.phi) * Math.sin(d.theta);
+      pp[i*3+2] = r * Math.cos(d.phi);
+    }
+    pGeo.attributes.position.needsUpdate = true;
+    
+    // Resize check
+    if (cv.width !== W() * renderer.getPixelRatio() || cv.height !== H() * renderer.getPixelRatio()) {
+      renderer.setSize(W(), H(), false);
+      camera.aspect = W() / H();
+      camera.updateProjectionMatrix();
+    }
+    
+    renderer.render(scene, camera);
+    
+    // FPS
+    fpsFrames++;
+    const now = performance.now();
+    if (now - fpsLast > 500) {
+      fpsEl.textContent = Math.round(fpsFrames * 1000 / (now - fpsLast));
+      fpsFrames = 0;
+      fpsLast = now;
+    }
+    
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  // ============================================================
+  // 3. MINI 3D LOGO
+  // ============================================================
+  const lcv = document.getElementById('land-logo-cv');
+  const lscene = new THREE.Scene();
+  const lcam = new THREE.PerspectiveCamera(45, 1, 0.1, 10);
+  lcam.position.z = 2.4;
+  const lrenderer = new THREE.WebGLRenderer({ canvas: lcv, antialias: true, alpha: true });
+  lrenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  lrenderer.setSize(28, 28, false);
+  const lgeo = new THREE.IcosahedronGeometry(0.7, 0);
+  const lmat = new THREE.MeshBasicMaterial({ color: 0xE8C5AF, wireframe: true });
+  const lmesh = new THREE.Mesh(lgeo, lmat);
+  lscene.add(lmesh);
+  function ltick() {
+    lmesh.rotation.x += 0.012;
+    lmesh.rotation.y += 0.018;
+    lrenderer.render(lscene, lcam);
+    requestAnimationFrame(ltick);
+  }
+  ltick();
+
+  // ============================================================
+  // 4. STAGGERED HEADLINE REVEAL
+  // ============================================================
+  const words = document.querySelectorAll('.land-word');
+  words.forEach((w, i) => {
+    setTimeout(() => w.classList.add('in'), 120 + i * 80);
+  });
+  setTimeout(() => {
+    document.getElementById('land-sub').style.opacity = '1';
+    document.getElementById('land-sub').style.transform = 'translateY(0)';
+    document.getElementById('land-cta').style.opacity = '1';
+    document.getElementById('land-cta').style.transform = 'translateY(0)';
+    document.getElementById('land-chips').style.opacity = '1';
+    document.getElementById('land-chips').style.transform = 'translateY(0)';
+    document.getElementById('land-annot').style.opacity = '1';
+    document.getElementById('land-scroll').style.opacity = '1';
+  }, 100);
+
+  // ============================================================
+  // 5. CLOCK TICKER
+  // ============================================================
+  const clockEl = document.getElementById('land-clock');
+  function updateClock() {
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    clockEl.textContent = 'PARIS · ' + hh + ':' + mm;
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+})();
+</script>
