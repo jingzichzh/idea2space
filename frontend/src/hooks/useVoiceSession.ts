@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createTranscriptionSocket, type TranscriptSocketMessage } from '../lib/websocket'
+import { createTranscriptionSocket, getTranscriptionSocketUrl, type TranscriptSocketMessage } from '../lib/websocket'
 
 type VoiceSessionState = 'idle' | 'connecting' | 'recording' | 'stopping' | 'error'
 
@@ -29,6 +29,7 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
   const [lastVoiceDetectedAt, setLastVoiceDetectedAt] = useState<number | null>(null)
   const [lastTranscriptReceivedAt, setLastTranscriptReceivedAt] = useState<number | null>(null)
   const [generationStatus, setGenerationStatus] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const cleanup = useCallback(() => {
     window.cancelAnimationFrame(levelRafRef.current)
@@ -58,6 +59,7 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
     setLastVoiceDetectedAt(null)
     setLastTranscriptReceivedAt(null)
     setGenerationStatus(null)
+    setErrorMessage(null)
   }, [cleanup])
 
   const stop = useCallback(async (finalizeMs = 1600) => {
@@ -127,7 +129,17 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
   const start = useCallback(async () => {
     if (state === 'connecting' || state === 'recording') return false
 
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      console.error('[recording] microphone capture is not available in this browser or context')
+      setErrorMessage('Microphone capture is not available in this browser or context.')
+      setState('error')
+      onFallback?.()
+      return false
+    }
+
+    if (typeof MediaRecorder === 'undefined') {
+      console.error('[recording] MediaRecorder is not supported in this browser')
+      setErrorMessage('MediaRecorder is not supported in this browser.')
       setState('error')
       onFallback?.()
       return false
@@ -143,12 +155,23 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
     setLastVoiceDetectedAt(null)
     setLastTranscriptReceivedAt(null)
     setGenerationStatus(null)
+    setErrorMessage(null)
     const sessionId = sessionIdRef.current + 1
     sessionIdRef.current = sessionId
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      } catch (error) {
+        const message = describeMicrophoneError(error)
+        console.error(`[recording] ${message}`, error)
+        throw new RecordingStartError(message)
+      }
+
       console.debug('microphone stream acquired')
+      const socketUrl = getTranscriptionSocketUrl()
+      console.debug(`connecting transcription WebSocket: ${socketUrl}`)
       const socket = createTranscriptionSocket()
 
       streamRef.current = stream
@@ -156,7 +179,13 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
       startAudioLevelDetection(stream, sessionId)
 
       await new Promise<void>((resolve, reject) => {
-        const fail = () => reject(new Error('Transcription WebSocket unavailable'))
+        const fail = (event: Event) => {
+          const message = event instanceof CloseEvent && event.reason
+            ? `Transcription WebSocket closed before recording started: ${event.reason}`
+            : `Transcription WebSocket unavailable at ${socketUrl}`
+          console.error('[recording] WebSocket connection failed', { url: socketUrl, event })
+          reject(new RecordingStartError(message))
+        }
 
         socket.addEventListener('open', () => resolve(), { once: true })
         socket.addEventListener('error', fail, { once: true })
@@ -168,6 +197,14 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
 
         const data = parseSocketMessage(event.data)
         if (!data) return
+
+        if (data.type === 'error') {
+          const message = data.message ?? data.detail ?? 'Backend reported an unknown transcription error.'
+          console.error(`[recording] backend error message: ${message}`)
+          setErrorMessage(message)
+          setState('error')
+          return
+        }
 
         if (data.type === 'transcript' && data.text.trim()) {
           console.debug('transcript message received')
@@ -201,7 +238,12 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
       setState('recording')
       onRecordingStarted?.()
       return true
-    } catch {
+    } catch (error) {
+      const message = error instanceof RecordingStartError
+        ? error.message
+        : `Recording failed: ${getErrorMessage(error)}`
+      console.error('[recording] start failed', error)
+      setErrorMessage(message)
       cleanup()
       setState('error')
       onFallback?.()
@@ -225,6 +267,7 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
 
   return {
     generationStatus,
+    errorMessage,
     audioLevel,
     hasDetectedVoice,
     isTranscribingChunk,
@@ -310,12 +353,39 @@ function wait(ms: number) {
   })
 }
 
+class RecordingStartError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'RecordingStartError'
+  }
+}
+
+function describeMicrophoneError(error: unknown) {
+  if (error instanceof DOMException) {
+    if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+      return 'Microphone permission denied.'
+    }
+    if (error.name === 'NotFoundError') {
+      return 'No microphone device was found.'
+    }
+    if (error.name === 'NotReadableError') {
+      return 'Microphone is unavailable, possibly because another app is using it.'
+    }
+  }
+
+  return `Microphone capture failed: ${getErrorMessage(error)}`
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
 function parseSocketMessage(data: unknown): TranscriptSocketMessage | null {
   if (typeof data !== 'string') return null
 
   try {
     const parsed = JSON.parse(data) as TranscriptSocketMessage
-    if (parsed.type === 'transcript' || parsed.type === 'generation_status') {
+    if (parsed.type === 'transcript' || parsed.type === 'generation_status' || parsed.type === 'error') {
       return parsed
     }
   } catch {

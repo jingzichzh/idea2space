@@ -253,7 +253,7 @@ const BuildWorkspace = memo(function BuildWorkspace({
       <header>
         <div>
           <span>HF-NATIVE SYSTEM ARCHITECTURE</span>
-          <h2>Your Space blueprint</h2>
+          <h2>BUILD YOUR IDEA WITH HUGGING FACE</h2>
           <p>{architectureModeLabel}</p>
         </div>
         <div>
@@ -422,7 +422,7 @@ function getVoiceStatus(
     return { label: 'Complete', dotState: 'complete', waveformActive: false, waveformLabel: 'stopped' }
   }
   if (mode === 'error' || voice.state === 'error') {
-    return { label: 'Microphone unavailable', dotState: 'idle', waveformActive: false, waveformLabel: 'error' }
+    return { label: voice.errorMessage ?? 'Microphone unavailable', dotState: 'idle', waveformActive: false, waveformLabel: 'error' }
   }
   if (voice.state === 'connecting') {
     return { label: 'Requesting microphone permission...', dotState: 'generating', waveformActive: false, waveformLabel: 'armed' }

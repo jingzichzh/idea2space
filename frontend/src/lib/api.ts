@@ -1,4 +1,8 @@
-const API_BASE_URL = 'http://127.0.0.1:7860'
+const LOCAL_API_BASE_URL = 'http://127.0.0.1:7860'
+
+function getApiBaseUrl() {
+  return import.meta.env.DEV ? LOCAL_API_BASE_URL : ''
+}
 
 export type RecommendedHfAsset = {
   name: string
@@ -69,7 +73,7 @@ export type GenerateArchitectureResponse = {
 }
 
 export async function generateArchitecture(transcript: string): Promise<GenerateArchitectureResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/generate-architecture`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/generate-architecture`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
