@@ -6,7 +6,7 @@ colorTo: gray
 sdk: docker
 pinned: false
 license: mit
-short_description: "Voice to Hugging Face's system architecture and agentic prompt"
+short_description: "Voice to HF architecture and agentic prompts"
 ---
 
 # idea2space
