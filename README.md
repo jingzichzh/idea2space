@@ -1,3 +1,14 @@
+---
+title: Idea2space
+emoji: 😻
+colorFrom: gray
+colorTo: gray
+sdk: docker
+pinned: false
+license: mit
+short_description: "Voice to Hugging Face's system architecture and agentic prompt"
+---
+
 # idea2space
 
 ## Local Development
