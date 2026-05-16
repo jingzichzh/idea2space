@@ -1,0 +1,79 @@
+{
+  "components": [
+    {
+      "name": "Spaces",
+      "category": "deployment",
+      "description": "Hosted demo apps for ML products and prototypes."
+    },
+    {
+      "name": "Docker Spaces",
+      "category": "deployment",
+      "description": "Custom container Spaces for full-stack apps, custom servers, and production-like demos."
+    },
+    {
+      "name": "Models",
+      "category": "model",
+      "description": "Hub-hosted model repositories with weights, configs, model cards, and inference metadata."
+    },
+    {
+      "name": "Inference Providers",
+      "category": "inference",
+      "description": "Serverless provider routing for supported model inference tasks."
+    },
+    {
+      "name": "Inference Endpoints",
+      "category": "inference",
+      "description": "Dedicated managed model endpoints for production workloads."
+    },
+    {
+      "name": "Datasets",
+      "category": "data",
+      "description": "Versioned data repositories for training, evaluation, examples, and product datasets."
+    },
+    {
+      "name": "Transformers",
+      "category": "model",
+      "description": "Python library for loading, fine-tuning, and running transformer models."
+    },
+    {
+      "name": "Gradio",
+      "category": "frontend",
+      "description": "Fast Python UI framework commonly used in Hugging Face Spaces."
+    },
+    {
+      "name": "Streamlit",
+      "category": "frontend",
+      "description": "Python app framework supported by Hugging Face Spaces."
+    },
+    {
+      "name": "smolagents",
+      "category": "agent",
+      "description": "Lightweight Hugging Face agent framework for tool-using workflows."
+    },
+    {
+      "name": "Hub repositories",
+      "category": "deployment",
+      "description": "Git-backed repositories for models, datasets, and Spaces."
+    },
+    {
+      "name": "Model cards",
+      "category": "guardrail",
+      "description": "Documentation for model usage, limitations, evaluation, and provenance."
+    },
+    {
+      "name": "Dataset cards",
+      "category": "guardrail",
+      "description": "Documentation for dataset contents, collection process, licensing, and limitations."
+    },
+    {
+      "name": "Evaluation datasets",
+      "category": "data",
+      "description": "Held-out datasets for quality checks, regression tests, and benchmark reporting."
+    },
+    {
+      "name": "Secrets / Space environment variables",
+      "category": "guardrail",
+      "description": "Private configuration values injected into Spaces without committing secrets."
+    }
+  ]
+}

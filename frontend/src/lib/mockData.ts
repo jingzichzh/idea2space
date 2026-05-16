@@ -148,5 +148,5 @@ export const roadmapItems: RoadmapItem[] = [
 export const studioMeta = [
   { label: 'VERSION', value: 'v0.5.0' },
   { label: 'ITERATION', value: '08 / 12' },
-  { label: 'BUILD', value: 'phase-1' },
+  { label: 'BUILD', value: 'phase-4' },
 ]

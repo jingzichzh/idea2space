@@ -18,6 +18,7 @@ const THREE_COLORS = {
 
 const GRAIN_CLASS = 'grain land-grain'
 const HERO_CANVAS_CLASS = 'hero-three'
+const HERO_PARTICLE_POSITIONS = createHeroParticlePositions()
 
 function GrainCanvas({ className }: { className: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -54,21 +55,6 @@ function GrainCanvas({ className }: { className: string }) {
 function HeroSculpture({ active }: { active: boolean }) {
   const groupRef = useRef<THREE.Group>(null)
   const pointsRef = useRef<ThreePoints>(null)
-  const particlePositions = useRef<Float32Array | null>(null)
-
-  if (!particlePositions.current) {
-    const count = 220
-    const positions = new Float32Array(count * 3)
-    for (let i = 0; i < count; i += 1) {
-      const radius = 1.55 + Math.random() * 0.85
-      const theta = Math.random() * Math.PI * 2
-      const phi = Math.acos(2 * Math.random() - 1)
-      positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta)
-      positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta)
-      positions[i * 3 + 2] = radius * Math.cos(phi)
-    }
-    particlePositions.current = positions
-  }
 
   useFrame(({ clock, pointer }) => {
     const t = clock.elapsedTime
@@ -94,11 +80,30 @@ function HeroSculpture({ active }: { active: boolean }) {
       <Icosahedron args={[1.42, 1]}>
         <meshBasicMaterial color={THREE_COLORS.accent} wireframe transparent opacity={0.32} />
       </Icosahedron>
-      <Points ref={pointsRef} positions={particlePositions.current ?? new Float32Array()} stride={3}>
+      <Points ref={pointsRef} positions={HERO_PARTICLE_POSITIONS} stride={3}>
         <PointMaterial color={THREE_COLORS.ink} size={0.025} transparent opacity={0.72} sizeAttenuation />
       </Points>
     </group>
   )
+}
+
+function createHeroParticlePositions() {
+  const count = 220
+  const positions = new Float32Array(count * 3)
+  for (let i = 0; i < count; i += 1) {
+    const radius = 1.55 + seededUnit(i * 3) * 0.85
+    const theta = seededUnit(i * 3 + 1) * Math.PI * 2
+    const phi = Math.acos(2 * seededUnit(i * 3 + 2) - 1)
+    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta)
+    positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta)
+    positions[i * 3 + 2] = radius * Math.cos(phi)
+  }
+  return positions
+}
+
+function seededUnit(seed: number) {
+  const value = Math.sin(seed * 12.9898 + 78.233) * 43758.5453
+  return value - Math.floor(value)
 }
 
 function MiniLogo() {

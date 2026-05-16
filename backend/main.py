@@ -3,14 +3,15 @@ import logging
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.schemas import TranscriptMessage
+from backend.schemas import GenerateArchitectureRequest, TranscriptMessage
+from backend.services.architecture_generator import generate_architecture_from_transcript
 from backend.services.asr import transcribe_audio
 from backend.services.mock_transcriber import MockTranscriber
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="idea2space Phase 3 API")
+app = FastAPI(title="idea2space Phase 4 API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,6 +19,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:5173",
     ],
+    allow_origin_regex=r"^http://(127\.0\.0\.1|localhost):\d+$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,12 +31,18 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.post("/api/generate-architecture")
+def generate_architecture(request: GenerateArchitectureRequest) -> dict:
+    return generate_architecture_from_transcript(request.transcript)
+
+
 @app.websocket("/ws/transcribe")
 async def transcribe(websocket: WebSocket) -> None:
     await websocket.accept()
     logger.info("WebSocket connected: /ws/transcribe")
     transcriber = MockTranscriber()
     audio_buffer = bytearray()
+    last_hf_transcript = ""
 
     try:
         while True:
@@ -48,8 +56,13 @@ async def transcribe(websocket: WebSocket) -> None:
 
             fallback = transcriber.transcribe_chunk(audio_chunk)
             asr_result = transcribe_audio(bytes(audio_buffer), fallback_text=fallback.text)
+            transcript_text = asr_result["text"]
+            if asr_result["source"] == "hf_asr":
+                transcript_text = transcript_delta(last_hf_transcript, transcript_text)
+                last_hf_transcript = asr_result["text"]
+
             transcript = TranscriptMessage(
-                text=asr_result["text"],
+                text=transcript_text,
                 is_final=False,
                 source=asr_result["source"],
             )
@@ -62,3 +75,15 @@ async def transcribe(websocket: WebSocket) -> None:
     except WebSocketDisconnect:
         logger.info("WebSocket disconnected: /ws/transcribe")
         return
+
+
+def transcript_delta(previous: str, current: str) -> str:
+    previous = previous.strip()
+    current = current.strip()
+    if not previous:
+        return current
+
+    if current.startswith(previous):
+        return current[len(previous):].strip()
+
+    return current

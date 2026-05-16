@@ -393,7 +393,8 @@ button {
 .studio {
   position: relative;
   min-height: 100svh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #ffffff;
 }
 
@@ -569,18 +570,52 @@ button {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  min-height: calc(100svh - 53px);
+  grid-template-columns: 390px minmax(0, 1fr);
+  height: calc(100svh - 53px);
+  min-height: 720px;
   background-color: #ffffff;
   background-image: none;
 }
 
+.voice-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  border-right: 0.5px solid rgba(60, 30, 20, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.recording-controls {
+  display: grid;
+  gap: 12px;
+  padding: 14px 22px;
+  border-bottom: 0.5px dashed rgba(60, 30, 20, 0.22);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.recording-controls > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.recording-controls b {
+  color: var(--accent);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
 .transcript-panel {
   position: relative;
-  min-height: 560px;
-  padding: 24px 22px 100px;
+  min-height: 0;
+  height: 100%;
+  padding: 26px 26px 116px;
   border: 0;
-  border-right: 0.5px solid rgba(60, 30, 20, 0.12);
+  border-right: 0;
   background: rgba(255, 255, 255, 0.86);
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.9),
@@ -627,14 +662,21 @@ button {
 }
 
 .transcript-copy {
-  min-height: 220px;
+  margin: 0;
   color: rgba(26, 14, 8, 0.78);
-  font-size: 14px;
+  font-size: 15.5px;
   line-height: 1.55;
 }
 
 .live-copy {
-  min-height: 270px;
+  min-height: 100%;
+}
+
+.transcript-scroll {
+  height: calc(100% - 168px);
+  min-height: 220px;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
 .transcript-copy span {
@@ -687,8 +729,11 @@ button {
 }
 
 .architecture-sheet {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
-  padding: 18px 20px 20px;
+  min-height: 0;
+  padding: 22px 26px 24px;
 }
 
 .architecture-sheet header {
@@ -701,10 +746,18 @@ button {
 .architecture-sheet h2 {
   margin: 6px 0 0;
   color: var(--ink);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1;
+}
+
+.architecture-sheet header p {
+  margin: 8px 0 0;
+  color: rgba(90, 47, 31, 0.75);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
 .architecture-sheet header > div:last-child {
@@ -720,25 +773,128 @@ button {
   letter-spacing: 0.04em;
 }
 
+.asset-section {
+  margin: 0 0 16px;
+}
+
+.asset-section > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.asset-section > div:first-child span,
+.asset-section > div:first-child strong {
+  color: var(--brown);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.asset-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.asset-strip a {
+  display: grid;
+  flex: 0 0 230px;
+  gap: 6px;
+  min-height: 118px;
+  padding: 12px;
+  border: 1px solid rgba(26, 14, 8, 0.14);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.asset-strip a:hover {
+  transform: translateY(-1px);
+  border-color: rgba(232, 93, 36, 0.5);
+  box-shadow: 0 10px 24px rgba(26, 14, 8, 0.08);
+}
+
+.asset-strip span,
+.asset-strip em,
+.asset-strip b {
+  color: var(--brown);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.asset-strip strong {
+  overflow: hidden;
+  margin: 0;
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-strip small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: rgba(60, 36, 24, 0.78);
+  font-size: 12px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.asset-strip b {
+  color: var(--accent);
+}
+
 .architecture-graph {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+}
+
+.workspace-split {
+  display: grid;
+  grid-template-rows: minmax(0, 65fr) minmax(210px, 35fr);
+  gap: 16px;
+  min-height: 0;
+}
+
+.workspace-graph-panel {
+  position: relative;
+  min-height: 0;
 }
 
 .architecture-flow {
   position: relative;
   width: 100%;
-  height: calc(100svh - 178px);
-  min-height: 520px;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
-  border: 0.5px solid rgba(26, 14, 8, 0.1);
-  border-radius: 6px;
-  background: #ffffff;
+  border: 0.5px solid rgba(70, 78, 125, 0.14);
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(246, 249, 255, 0.96)),
+    radial-gradient(circle at 20% 20%, rgba(255, 214, 102, 0.14), transparent 28%),
+    radial-gradient(circle at 82% 16%, rgba(99, 102, 241, 0.1), transparent 28%);
+}
+
+.architecture-sheet-with-prompt .architecture-flow {
+  height: 100%;
+  min-height: 0;
 }
 
 .architecture-flow .react-flow {
-  background: #ffffff;
+  background: transparent;
 }
 
 .architecture-flow .react-flow__attribution {
@@ -753,59 +909,143 @@ button {
 
 .hf-node-shell {
   position: relative;
-  width: 86px;
-  min-height: 42px;
-  padding: 5px 7px;
-  border: 0.5px solid rgba(26, 14, 8, 0.22);
-  border-radius: 4px;
-  background: var(--ink);
-  color: var(--paper-soft);
-  box-shadow: 0 6px 16px rgba(26, 14, 8, 0.12);
+  display: block;
+  width: 250px;
+  min-height: 138px;
+  padding: 16px;
+  border: 1px solid rgba(31, 22, 15, 0.12);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #1f160f;
+  font: inherit;
+  text-align: left;
+  box-shadow: 0 16px 40px rgba(54, 67, 120, 0.14);
+  text-decoration: none;
   animation: fade-up 0.28s ease both;
+}
+
+.hf-node-shell-linked {
+  cursor: pointer;
+}
+
+.hf-node-shell-linked:hover {
+  border-color: rgba(232, 93, 36, 0.38);
+  box-shadow: 0 20px 44px rgba(54, 67, 120, 0.2);
+  transform: translateY(-2px);
+}
+
+.hf-node-shell-stage-0 {
+  background: linear-gradient(135deg, #fff8db, #ffe8a8);
+}
+
+.hf-node-shell-stage-1 {
+  background: linear-gradient(135deg, #eaf7ff, #d6edff);
+}
+
+.hf-node-shell-stage-2 {
+  background: linear-gradient(135deg, #f1e8ff, #ddd1ff);
+}
+
+.hf-node-shell-stage-3 {
+  background: linear-gradient(135deg, #e9fbf0, #d5f5df);
+}
+
+.hf-node-shell-stage-4 {
+  background: linear-gradient(135deg, #ffeaf3, #ffd7e8);
 }
 
 .hf-node-shell div {
   display: grid;
-  gap: 2px;
+  gap: 8px;
 }
 
 .hf-node-shell strong {
-  font-size: 8.5px;
-  line-height: 1.1;
+  color: #1f160f;
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.16;
   letter-spacing: 0;
 }
 
 .hf-node-shell small {
-  color: #a87a5f;
+  display: -webkit-box;
+  overflow: hidden;
+  color: #6f6258;
+  font-size: 12.5px;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.hf-stage-label {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #1f160f;
   font-family: var(--mono);
-  font-size: 5.8px;
-  line-height: 1.25;
-  letter-spacing: 0.04em;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hf-asset-chip {
+  display: grid;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.hf-asset-chip b,
+.hf-asset-chip em,
+.hf-asset-chip a {
+  color: #1f160f;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-decoration: none;
   text-transform: uppercase;
 }
 
-.hf-tag {
+.hf-asset-chip a {
   width: fit-content;
-  padding: 1px 3px;
-  border: 0.5px solid rgba(245, 219, 160, 0.38);
-  border-radius: 2px;
-  color: var(--gold);
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #1f160f;
+  color: #ffffff;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.hf-asset-chip i {
+  overflow: hidden;
+  color: #6f6258;
   font-family: var(--mono);
-  font-size: 5.5px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hf-handle {
-  width: 4px;
-  height: 4px;
-  border: 0.5px solid var(--paper);
-  background: var(--accent);
+  width: 7px;
+  height: 7px;
+  border: 1px solid #ffffff;
+  background: #8b5cf6;
 }
 
 .architecture-flow .react-flow__edge-path {
-  stroke: var(--ink);
-  stroke-width: 0.8;
-  stroke-dasharray: 3 3;
+  stroke: rgba(91, 104, 151, 0.36);
+  stroke-width: 2;
+  stroke-dasharray: none;
 }
 
 .architecture-flow .react-flow__edge.animated .react-flow__edge-path {
@@ -813,14 +1053,14 @@ button {
 }
 
 .architecture-flow .react-flow__edge-text {
-  fill: var(--brown);
+  fill: rgba(55, 65, 81, 0.7);
   font-family: var(--mono);
-  font-size: 6px;
+  font-size: 11px;
   letter-spacing: 0.08em;
 }
 
 .architecture-flow .react-flow__edge-textbg {
-  fill: rgba(255, 255, 255, 0.9);
+  fill: rgba(255, 255, 255, 0.86);
 }
 
 .flow-legend {
@@ -831,9 +1071,86 @@ button {
   gap: 10px;
   color: rgba(90, 47, 31, 0.72);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   pointer-events: none;
+}
+
+.build-prompt-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  margin-top: 0;
+  border: 0.5px solid rgba(26, 14, 8, 0.12);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.build-prompt-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  padding: 14px 16px;
+  border-bottom: 0.5px solid rgba(60, 30, 20, 0.12);
+}
+
+.build-prompt-panel h3 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.build-prompt-panel button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.build-prompt-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.build-prompt-panel pre {
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  overflow: auto;
+  padding: 16px;
+  color: rgba(26, 14, 8, 0.86);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+}
+
+.workspace-empty-state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #6f6258;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  text-transform: uppercase;
 }
 
 .registration-marks {
@@ -1107,7 +1424,7 @@ button {
 
 @media (max-width: 1120px) {
   .studio-canvas {
-    grid-template-columns: 270px 1fr;
+    grid-template-columns: 360px 1fr;
   }
 
   .roadmap-panel {
@@ -1169,6 +1486,16 @@ button {
   .transcript-panel footer {
     position: static;
     margin-top: 24px;
+  }
+
+  .architecture-sheet-with-prompt .architecture-flow {
+    height: 560px;
+    min-height: 560px;
+  }
+
+  .build-prompt-panel header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .roadmap-list {
