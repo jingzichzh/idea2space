@@ -1,7 +1,9 @@
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from backend.schemas import GenerateArchitectureRequest, TranscriptMessage
 from backend.services.architecture_generator import generate_architecture_from_transcript
@@ -12,6 +14,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="idea2space Phase 4 API")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+FRONTEND_DIST = PROJECT_ROOT / "frontend" / "dist"
 
 app.add_middleware(
     CORSMiddleware,
@@ -87,3 +91,14 @@ def transcript_delta(previous: str, current: str) -> str:
         return current[len(previous):].strip()
 
     return current
+
+
+if FRONTEND_DIST.exists():
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_frontend(full_path: str) -> FileResponse:
+        requested_path = FRONTEND_DIST / full_path
+        if full_path and requested_path.is_file():
+            return FileResponse(requested_path)
+
+        return FileResponse(FRONTEND_DIST / "index.html")
