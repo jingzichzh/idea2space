@@ -1,5 +1,24 @@
 const API_BASE_URL = 'http://127.0.0.1:7860'
 
+export type RecommendedHfAsset = {
+  name: string
+  type: 'space' | 'model' | 'dataset' | 'doc' | 'tool'
+  hf_id: string
+  url: string
+  role: string
+  why_relevant: string
+  use_mode: 'fork' | 'reference' | 'connect_as_tool' | 'use_model' | 'dataset_source'
+  agent_ready: boolean
+  mcp_ready: boolean
+  confidence: 'high' | 'medium' | 'low'
+  source?: 'hf_hub_search' | 'curated_catalog'
+  likes?: number
+  downloads?: number
+  tags?: string[]
+  attach_to_node_id: string
+  note?: string
+}
+
 export type GeneratedArchitectureNode = {
   id: string
   label: string
@@ -9,6 +28,7 @@ export type GeneratedArchitectureNode = {
   why?: string
   confidence?: number
   hf_tag?: string
+  recommended_assets?: RecommendedHfAsset[]
 }
 
 export type GeneratedArchitectureEdge = {
@@ -20,8 +40,10 @@ export type GeneratedArchitectureEdge = {
 export type GeneratedArchitecture = {
   summary?: string
   recommended_stack?: string[]
+  recommended_hf_assets?: RecommendedHfAsset[]
   assumptions?: string[]
   next_steps?: string[]
+  build_prompt?: string
   product_name: string
   one_liner: string
   user_input_summary: string
@@ -42,6 +64,7 @@ export type GeneratedArchitecture = {
 export type GenerateArchitectureResponse = {
   type: 'architecture'
   source: 'hf_llm' | 'mock'
+  prompt_version?: string
   architecture: GeneratedArchitecture
 }
 

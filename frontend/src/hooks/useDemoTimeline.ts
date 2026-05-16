@@ -41,7 +41,10 @@ export function useDemoTimeline(autoStart: boolean) {
   }, [demoState])
 
   useEffect(() => {
-    if (autoStart) start()
+    if (!autoStart) return undefined
+
+    const timer = window.setTimeout(start, 0)
+    return () => window.clearTimeout(timer)
   }, [autoStart, start])
 
   useEffect(() => {
