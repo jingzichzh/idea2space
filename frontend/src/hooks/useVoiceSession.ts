@@ -10,6 +10,11 @@ type UseVoiceSessionOptions = {
 
 const CHUNK_INTERVAL_MS = 2500
 const VOICE_DETECTED_THRESHOLD = 0.08
+const MEDIA_RECORDER_MIME_TYPES = [
+  'audio/webm;codecs=opus',
+  'audio/webm',
+  'audio/mp4',
+]
 
 export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSessionOptions) {
   const socketRef = useRef<WebSocket | null>(null)
@@ -129,19 +134,23 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
   const start = useCallback(async () => {
     if (state === 'connecting' || state === 'recording') return false
 
+    console.info('REAL_RECORDING_ENV', getRecordingEnvironment())
+
     if (!navigator.mediaDevices?.getUserMedia) {
+      const message = 'Microphone capture is not available in this browser or context.'
+      console.info('REAL_RECORDING_ERROR', message)
       console.error('[recording] microphone capture is not available in this browser or context')
-      setErrorMessage('Microphone capture is not available in this browser or context.')
+      setErrorMessage(message)
       setState('error')
-      onFallback?.()
       return false
     }
 
     if (typeof MediaRecorder === 'undefined') {
+      const message = 'MediaRecorder is not supported in this browser.'
+      console.info('REAL_RECORDING_ERROR', message)
       console.error('[recording] MediaRecorder is not supported in this browser')
-      setErrorMessage('MediaRecorder is not supported in this browser.')
+      setErrorMessage(message)
       setState('error')
-      onFallback?.()
       return false
     }
 
@@ -162,15 +171,27 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
     try {
       let stream: MediaStream
       try {
+        console.info('REAL_MIC_REQUEST_START')
         stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       } catch (error) {
         const message = describeMicrophoneError(error)
+        console.info('REAL_RECORDING_ERROR', message)
         console.error(`[recording] ${message}`, error)
         throw new RecordingStartError(message)
       }
 
+      console.info('REAL_MIC_STREAM_ACQUIRED', {
+        audioTracks: stream.getAudioTracks().map((track) => ({
+          enabled: track.enabled,
+          id: track.id,
+          label: track.label,
+          muted: track.muted,
+          readyState: track.readyState,
+        })),
+      })
       console.debug('microphone stream acquired')
       const socketUrl = getTranscriptionSocketUrl()
+      console.info('REAL_WS_CONNECTING', { url: socketUrl })
       console.debug(`connecting transcription WebSocket: ${socketUrl}`)
       const socket = createTranscriptionSocket()
 
@@ -183,11 +204,15 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
           const message = event instanceof CloseEvent && event.reason
             ? `Transcription WebSocket closed before recording started: ${event.reason}`
             : `Transcription WebSocket unavailable at ${socketUrl}`
+          console.info('REAL_RECORDING_ERROR', message)
           console.error('[recording] WebSocket connection failed', { url: socketUrl, event })
           reject(new RecordingStartError(message))
         }
 
-        socket.addEventListener('open', () => resolve(), { once: true })
+        socket.addEventListener('open', () => {
+          console.info('REAL_WS_CONNECTED', { url: socketUrl })
+          resolve()
+        }, { once: true })
         socket.addEventListener('error', fail, { once: true })
         socket.addEventListener('close', fail, { once: true })
       })
@@ -207,6 +232,10 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
         }
 
         if (data.type === 'transcript' && data.text.trim()) {
+          console.info('REAL_TRANSCRIPT_RECEIVED', {
+            chars: data.text.length,
+            source: data.source,
+          })
           console.debug('transcript message received')
           setIsTranscribingChunk(false)
           setLastTranscriptReceivedAt(Date.now())
@@ -223,11 +252,19 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
         }
       })
 
-      const recorder = new MediaRecorder(stream)
+      const mimeType = chooseMediaRecorderMimeType()
+      console.info('REAL_MEDIA_RECORDER_CREATED', { mimeType: mimeType || '<browser-default>' })
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
       recorderRef.current = recorder
 
       recorder.addEventListener('dataavailable', (event) => {
+        console.info('REAL_AUDIO_CHUNK_AVAILABLE', {
+          size: event.data.size,
+          type: event.data.type,
+          socketReadyState: socket.readyState,
+        })
         if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+          console.info('REAL_AUDIO_CHUNK_SENT', { size: event.data.size })
           console.debug('audio chunk sent')
           setIsTranscribingChunk(true)
           socket.send(event.data)
@@ -235,6 +272,11 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
       })
 
       recorder.start(CHUNK_INTERVAL_MS)
+      console.info('REAL_MEDIA_RECORDER_STARTED', {
+        intervalMs: CHUNK_INTERVAL_MS,
+        mimeType: recorder.mimeType || '<browser-default>',
+        state: recorder.state,
+      })
       setState('recording')
       onRecordingStarted?.()
       return true
@@ -242,11 +284,11 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
       const message = error instanceof RecordingStartError
         ? error.message
         : `Recording failed: ${getErrorMessage(error)}`
+      console.info('REAL_RECORDING_ERROR', message)
       console.error('[recording] start failed', error)
       setErrorMessage(message)
       cleanup()
       setState('error')
-      onFallback?.()
       return false
     }
   }, [cleanup, onFallback, onRecordingStarted, startAudioLevelDetection, state])
@@ -360,17 +402,48 @@ class RecordingStartError extends Error {
   }
 }
 
+function getRecordingEnvironment() {
+  return {
+    href: window.location.href,
+    origin: window.location.origin,
+    isSecureContext: window.isSecureContext,
+    hasMediaDevices: Boolean(navigator.mediaDevices),
+    hasGetUserMedia: Boolean(navigator.mediaDevices?.getUserMedia),
+    hasMediaRecorder: typeof MediaRecorder !== 'undefined',
+    documentHasFocus: document.hasFocus(),
+    isTopWindow: getIsTopWindow(),
+  }
+}
+
+function getIsTopWindow() {
+  try {
+    return window.top === window.self
+  } catch (error) {
+    return `blocked: ${getErrorMessage(error)}`
+  }
+}
+
+function chooseMediaRecorderMimeType() {
+  if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+    return ''
+  }
+
+  return MEDIA_RECORDER_MIME_TYPES.find((mimeType) => MediaRecorder.isTypeSupported(mimeType)) ?? ''
+}
+
 function describeMicrophoneError(error: unknown) {
   if (error instanceof DOMException) {
+    const details = `${error.name}: ${error.message || 'No browser message provided.'}`
     if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
-      return 'Microphone permission denied.'
+      return `Microphone permission denied (${details})`
     }
     if (error.name === 'NotFoundError') {
-      return 'No microphone device was found.'
+      return `No microphone device was found (${details})`
     }
     if (error.name === 'NotReadableError') {
-      return 'Microphone is unavailable, possibly because another app is using it.'
+      return `Microphone is unavailable, possibly because another app is using it (${details})`
     }
+    return `Microphone capture failed (${details})`
   }
 
   return `Microphone capture failed: ${getErrorMessage(error)}`

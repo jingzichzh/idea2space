@@ -43,6 +43,7 @@ def generate_architecture(request: GenerateArchitectureRequest) -> dict:
 @app.websocket("/ws/transcribe")
 async def transcribe(websocket: WebSocket) -> None:
     await websocket.accept()
+    logger.info("WS_TRANSCRIBE_CONNECTED")
     logger.info("WebSocket connected: /ws/transcribe")
     transcriber = MockTranscriber()
     audio_buffer = bytearray()
@@ -52,6 +53,7 @@ async def transcribe(websocket: WebSocket) -> None:
         while True:
             audio_chunk = await websocket.receive_bytes()
             audio_buffer.extend(audio_chunk)
+            logger.info("WS_AUDIO_CHUNK_RECEIVED bytes=%s", len(audio_chunk))
             logger.info(
                 "Audio chunk received: %s bytes; buffered session audio: %s bytes",
                 len(audio_chunk),
@@ -72,11 +74,13 @@ async def transcribe(websocket: WebSocket) -> None:
             )
             logger.info("Transcript source: %s", transcript.source)
             await websocket.send_json(transcript.model_dump())
-
-            status = transcriber.generation_status()
-            if status is not None:
-                await websocket.send_json(status.model_dump())
+            logger.info(
+                "WS_TRANSCRIPT_SENT source=%s chars=%s",
+                transcript.source,
+                len(transcript.text),
+            )
     except WebSocketDisconnect:
+        logger.info("WS_TRANSCRIBE_DISCONNECTED")
         logger.info("WebSocket disconnected: /ws/transcribe")
         return
 
