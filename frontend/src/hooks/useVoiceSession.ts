@@ -132,9 +132,12 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
   }, [])
 
   const start = useCallback(async () => {
-    if (state === 'connecting' || state === 'recording') return false
-
     console.info('REAL_RECORDING_ENV', getRecordingEnvironment())
+
+    if (state === 'connecting' || state === 'recording') {
+      console.info('REAL_RECORDING_START_SKIPPED', { state })
+      return false
+    }
 
     if (!navigator.mediaDevices?.getUserMedia) {
       const message = 'Microphone capture is not available in this browser or context.'
