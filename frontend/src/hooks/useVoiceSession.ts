@@ -26,6 +26,7 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
   const sessionIdRef = useRef(0)
   const transcriptRef = useRef('')
   const voiceDetectedLoggedRef = useRef(false)
+  const lastAudioLevelLogAtRef = useRef(0)
   const [state, setState] = useState<VoiceSessionState>('idle')
   const [transcript, setTranscript] = useState('')
   const [audioLevel, setAudioLevel] = useState(0)
@@ -60,6 +61,7 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
     setAudioLevel(0)
     setHasDetectedVoice(false)
     voiceDetectedLoggedRef.current = false
+    lastAudioLevelLogAtRef.current = 0
     setIsTranscribingChunk(false)
     setLastVoiceDetectedAt(null)
     setLastTranscriptReceivedAt(null)
@@ -88,12 +90,15 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
     return finalTranscript
   }, [cleanup])
 
-  const startAudioLevelDetection = useCallback((stream: MediaStream, sessionId: number) => {
+  const startAudioLevelDetection = useCallback(async (stream: MediaStream, sessionId: number) => {
     const audioWindow = window as Window & {
       webkitAudioContext?: typeof AudioContext
     }
     const AudioContextClass = window.AudioContext || audioWindow.webkitAudioContext
-    if (!AudioContextClass) return
+    if (!AudioContextClass) {
+      console.info('REAL_AUDIO_CONTEXT_UNAVAILABLE')
+      return
+    }
 
     const audioContext = new AudioContextClass()
     const analyser = audioContext.createAnalyser()
@@ -101,6 +106,16 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
     audioContext.createMediaStreamSource(stream).connect(analyser)
     audioContextRef.current = audioContext
     analyserRef.current = analyser
+    console.info('REAL_AUDIO_CONTEXT_STATE', { state: audioContext.state })
+
+    if (audioContext.state === 'suspended') {
+      try {
+        await audioContext.resume()
+        console.info('REAL_AUDIO_CONTEXT_RESUMED', { state: audioContext.state })
+      } catch (error) {
+        console.info('REAL_AUDIO_CONTEXT_RESUME_FAILED', getErrorMessage(error))
+      }
+    }
 
     const samples = new Uint8Array(analyser.fftSize)
     const tick = () => {
@@ -115,6 +130,16 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
       const rms = Math.sqrt(sum / samples.length)
       const level = Math.min(1, Math.max(0, rms * 4))
       setAudioLevel(level)
+
+      const now = Date.now()
+      if (now - lastAudioLevelLogAtRef.current > 1000) {
+        lastAudioLevelLogAtRef.current = now
+        console.info('REAL_AUDIO_LEVEL_SAMPLE', {
+          audioContextState: audioContext.state,
+          level,
+          rms,
+        })
+      }
 
       if (level >= VOICE_DETECTED_THRESHOLD) {
         if (!voiceDetectedLoggedRef.current) {
@@ -190,7 +215,31 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
           label: track.label,
           muted: track.muted,
           readyState: track.readyState,
+          settings: track.getSettings(),
         })),
+      })
+      stream.getAudioTracks().forEach((track) => {
+        track.addEventListener('mute', () => {
+          console.info('REAL_AUDIO_TRACK_MUTED', {
+            id: track.id,
+            label: track.label,
+            readyState: track.readyState,
+          })
+        })
+        track.addEventListener('unmute', () => {
+          console.info('REAL_AUDIO_TRACK_UNMUTED', {
+            id: track.id,
+            label: track.label,
+            readyState: track.readyState,
+          })
+        })
+        track.addEventListener('ended', () => {
+          console.info('REAL_AUDIO_TRACK_ENDED', {
+            id: track.id,
+            label: track.label,
+            readyState: track.readyState,
+          })
+        })
       })
       console.debug('microphone stream acquired')
       const socketUrl = getTranscriptionSocketUrl()
@@ -200,7 +249,7 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
 
       streamRef.current = stream
       socketRef.current = socket
-      startAudioLevelDetection(stream, sessionId)
+      await startAudioLevelDetection(stream, sessionId)
 
       await new Promise<void>((resolve, reject) => {
         let didOpen = false
