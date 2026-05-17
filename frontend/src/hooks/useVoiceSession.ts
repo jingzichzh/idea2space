@@ -203,21 +203,61 @@ export function useVoiceSession({ onFallback, onRecordingStarted }: UseVoiceSess
       startAudioLevelDetection(stream, sessionId)
 
       await new Promise<void>((resolve, reject) => {
-        const fail = (event: Event) => {
-          const message = event instanceof CloseEvent && event.reason
-            ? `Transcription WebSocket closed before recording started: ${event.reason}`
-            : `Transcription WebSocket unavailable at ${socketUrl}`
+        let didOpen = false
+
+        const cleanupStartupListeners = () => {
+          socket.removeEventListener('open', handleOpen)
+          socket.removeEventListener('error', handleErrorBeforeOpen)
+          socket.removeEventListener('close', handleCloseBeforeOpen)
+        }
+
+        const handleOpen = () => {
+          didOpen = true
+          cleanupStartupListeners()
+          console.info('REAL_WS_CONNECTED', { url: socketUrl })
+          resolve()
+        }
+
+        const handleErrorBeforeOpen = (event: Event) => {
+          if (didOpen) return
+
+          cleanupStartupListeners()
+          const message = `Transcription WebSocket unavailable at ${socketUrl}`
           console.info('REAL_RECORDING_ERROR', message)
-          console.error('[recording] WebSocket connection failed', { url: socketUrl, event })
+          console.error('[recording] WebSocket connection failed before open', { url: socketUrl, event })
           reject(new RecordingStartError(message))
         }
 
-        socket.addEventListener('open', () => {
-          console.info('REAL_WS_CONNECTED', { url: socketUrl })
-          resolve()
-        }, { once: true })
-        socket.addEventListener('error', fail, { once: true })
-        socket.addEventListener('close', fail, { once: true })
+        const handleCloseBeforeOpen = (event: CloseEvent) => {
+          if (didOpen) return
+
+          cleanupStartupListeners()
+          const message = event.reason
+            ? `Transcription WebSocket closed before recording started: ${event.reason}`
+            : `Transcription WebSocket unavailable at ${socketUrl}`
+          console.info('REAL_WS_CLOSED_BEFORE_OPEN', {
+            code: event.code,
+            reason: event.reason,
+            wasClean: event.wasClean,
+            url: socketUrl,
+          })
+          console.info('REAL_RECORDING_ERROR', message)
+          console.error('[recording] WebSocket closed before open', { url: socketUrl, event })
+          reject(new RecordingStartError(message))
+        }
+
+        socket.addEventListener('open', handleOpen)
+        socket.addEventListener('error', handleErrorBeforeOpen)
+        socket.addEventListener('close', handleCloseBeforeOpen)
+      })
+
+      socket.addEventListener('close', (event) => {
+        console.info('REAL_WS_CLOSED_NORMAL', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+          url: socketUrl,
+        })
       })
 
       socket.addEventListener('message', (event) => {

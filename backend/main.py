@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -7,7 +8,7 @@ from fastapi.responses import FileResponse
 
 from backend.schemas import GenerateArchitectureRequest, TranscriptMessage
 from backend.services.architecture_generator import generate_architecture_from_transcript
-from backend.services.asr import transcribe_audio
+from backend.services.asr import DEFAULT_ASR_MODEL, transcribe_audio
 from backend.services.mock_transcriber import MockTranscriber
 
 logging.basicConfig(level=logging.INFO)
@@ -40,6 +41,16 @@ def generate_architecture(request: GenerateArchitectureRequest) -> dict:
     return generate_architecture_from_transcript(request.transcript)
 
 
+@app.get("/api/debug-env")
+def debug_env() -> dict[str, bool | str]:
+    return {
+        "hf_token_present": bool(os.getenv("HF_TOKEN")),
+        "asr_model": os.getenv("ASR_MODEL", DEFAULT_ASR_MODEL),
+        "llm_model_present": bool(os.getenv("LLM_MODEL")),
+        "app_env": os.getenv("APP_ENV") or os.getenv("ENV") or ("production" if os.getenv("SPACE_ID") or os.getenv("SPACE_HOST") else "local"),
+    }
+
+
 @app.websocket("/ws/transcribe")
 async def transcribe(websocket: WebSocket) -> None:
     await websocket.accept()
@@ -53,7 +64,11 @@ async def transcribe(websocket: WebSocket) -> None:
         while True:
             audio_chunk = await websocket.receive_bytes()
             audio_buffer.extend(audio_chunk)
-            logger.info("WS_AUDIO_CHUNK_RECEIVED bytes=%s", len(audio_chunk))
+            logger.info(
+                "WS_AUDIO_CHUNK_RECEIVED bytes=%s buffered_audio_bytes=%s",
+                len(audio_chunk),
+                len(audio_buffer),
+            )
             logger.info(
                 "Audio chunk received: %s bytes; buffered session audio: %s bytes",
                 len(audio_chunk),
