@@ -162,19 +162,23 @@ const VoicePanel = memo(function VoicePanel({
   const startRecording = useCallback(async () => {
     if (mode === 'recording' || mode === 'finalizing_transcript' || mode === 'generating' || voice.isRecording || voice.isStarting) return
 
+    console.info('REAL_RECORDING_START')
     voice.reset()
     onRecordingStart()
-    onModeChange('recording')
 
     const started = await voice.start()
     if (!started) {
       onModeChange('error')
+      return
     }
+
+    onModeChange('recording')
   }, [mode, onModeChange, onRecordingStart, voice])
 
   const stopRecording = useCallback(async () => {
-    if (mode !== 'recording') return
+    if (mode !== 'recording' || !voice.isRecording) return
 
+    console.info('REAL_RECORDING_STOP')
     onModeChange('finalizing_transcript')
     const transcript = await voice.stop()
     onFinalTranscript(transcript)

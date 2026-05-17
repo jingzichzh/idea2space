@@ -24,6 +24,7 @@ export function useDemoTimeline(autoStart: boolean) {
   }, [])
 
   const start = useCallback(() => {
+    console.info('DEMO_TIMELINE_START')
     setDemoState('recording')
     setIsPaused(false)
     setVisibleWordCount(0)
@@ -41,6 +42,7 @@ export function useDemoTimeline(autoStart: boolean) {
   }, [demoState])
 
   useEffect(() => {
+    if (import.meta.env.PROD) return undefined
     if (!autoStart) return undefined
 
     const timer = window.setTimeout(start, 0)
