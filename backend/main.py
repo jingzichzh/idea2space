@@ -61,11 +61,33 @@ async def transcribe(websocket: WebSocket) -> None:
             )
 
             fallback = transcriber.transcribe_chunk(audio_chunk)
+            logger.info("WS_ASR_CALL buffered_audio_bytes=%s", len(audio_buffer))
             asr_result = transcribe_audio(bytes(audio_buffer), fallback_text=fallback.text)
+            if asr_result["source"] == "pending" or not asr_result["text"].strip():
+                logger.info(
+                    "WS_TRANSCRIPT_SKIPPED source=%s buffered_audio_bytes=%s",
+                    asr_result["source"],
+                    len(audio_buffer),
+                )
+                continue
+
+            if asr_result["source"] == "error":
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "message": asr_result["text"],
+                    }
+                )
+                logger.info("WS_ASR_ERROR_SENT chars=%s", len(asr_result["text"]))
+                continue
+
             transcript_text = asr_result["text"]
             if asr_result["source"] == "hf_asr":
                 transcript_text = transcript_delta(last_hf_transcript, transcript_text)
                 last_hf_transcript = asr_result["text"]
+                if not transcript_text:
+                    logger.info("WS_TRANSCRIPT_SKIPPED empty_hf_delta")
+                    continue
 
             transcript = TranscriptMessage(
                 text=transcript_text,
